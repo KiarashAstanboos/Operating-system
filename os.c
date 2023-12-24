@@ -13,14 +13,15 @@ void printFiles(char *path) {
     }
 
     while ((entry = readdir(dir)) != NULL) {
-        if (entry->d_type == DT_DIR) {
-            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+        if (entry->d_type == DT_DIR) { 
+            // age direcotry bood recursive khodesho call mikone
+             if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
                 continue;
-            }
+            }//jolo giri az loop
             char pathName[1024];
             snprintf(pathName, sizeof(pathName), "%s/%s", path, entry->d_name);
             printFiles(pathName);
-        } else {
+        } else { // age be file resid file ro print mikone
             printf("%s/%s\n", path, entry->d_name);
         }
     }
