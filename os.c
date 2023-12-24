@@ -4,4 +4,5 @@ void main(){
     printf("\n2");
     printf("\n2");
     printf("\n2\n");
+    printf("\n2\n");
 }
