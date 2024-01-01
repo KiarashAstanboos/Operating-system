@@ -1,53 +1,3 @@
-/*
-
-#include <stdio.h> 
-#include <stdlib.h> 
-#include <unistd.h>  //Header file for sleep(). man 3 sleep for details. 
-#include <pthread.h> 
-#include <dirent.h>
-#include <sys/stat.h>
-
-/*
-
-int main()
-{
-    FILE* fptr;
-
-    fptr = fopen("test.txt", "r");
-    char contet[1000];
-    if(fptr != NULL)
-    {
-        printf("s\n"); 
-        fgets(contet, 1000, fptr);
-        printf("%s\n", contet);
-    }else{
-        printf("n\n");
-    }
-
-    return 0;
-}
-
-void * worekert(void * tid)
-{
-    long * myid = (long *) tid;
-    printf("hjsfbjsfbf %ld\n", *myid);
-}
-
-int main()
-{
-    pthread_t tid;
-    pthread_t tid1;
-    pthread_t tid2;
-    pthread_t * pthreads[] = {&tid,&tid1,&tid2};
-    for (int i = 0; i < 3; i++)
-    {
-        pthread_create(pthreads[i], NULL, worekert, (void *)pthreads[i]);
-    }
-    
-    pthread_exit(NULL);
-    return 0;
-}
-*/
 #include <math.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -60,7 +10,31 @@ int main()
 #include <inttypes.h>
 
 
+// this arguments is information about file directory.
+struct arg_function
+{
+    char dir[1024];
+    int depth;
+    long int root;
+    long int maximum;
+    long int minimum;
+    char min_directory[1024];
+    char max_directory[1024];
+    int number_of_files;
+    int text_filse;
+    int png_files;
+    int jpg_filse;
+    int zip_filse;
+    int mp4_filse;
+    int pptx_filse;
+    int pdf_files;
+    int c_filse;
+    int uknown_filse;
+};
 
+pthread_mutex_t lock1; // lock varible
+
+// this function convert byte -> kilo byte -> mega byte -> giga byte.
 void calculateSize(size_t size)
 {   
   static const char *SIZES[] = { "B", "kB", "MB", "GB" };
@@ -76,7 +50,7 @@ void calculateSize(size_t size)
     printf("%.2f %s\n", (float)size + (float)rem / 1024.0, SIZES[div]);
 }
 
-
+// this function return size of file.
 long int findSize(char file_name[]) 
 { 
     // opening the file in read mode 
@@ -100,16 +74,13 @@ long int findSize(char file_name[])
 } 
 
 
-// find files in directory 
-void printdir(char *dir, int depth, long int* maximum, long int* minimum, char* min_directory, char* max_directory, int* number_of_filse,int* text_filse,int* png_files,
-int* jpg_filse,int* pdf_files,int* mp4_filse,int* zip_filse,int* pptx_filse)
+void recurive_find_files(char *dir, struct arg_function *arguments)
 {
-    char s[400]; 
-    struct stat st;
-    long size;
+    char s[1024]; //->for live direction
     DIR *dp;
     struct dirent *entry;
     struct stat statbuf;
+
     if((dp = opendir(dir)) == NULL) {   // -> sure about write directory
         fprintf(stderr,"cannot open directory: %s\n", dir);
         return;
@@ -123,47 +94,63 @@ int* jpg_filse,int* pdf_files,int* mp4_filse,int* zip_filse,int* pptx_filse)
             /* Found a directory, but ignore . and .. */
             if(strcmp(".",entry->d_name) == 0 || strcmp("..",entry->d_name) == 0)
                 continue;
-            printf("%*s%s/\n",depth,"",entry->d_name);
-            /* Recurse at a new indent level */
-            printdir(entry->d_name,depth+4, maximum, minimum, min_directory, max_directory, number_of_filse, text_filse, png_files, jpg_filse, pdf_files, mp4_filse, zip_filse, pptx_filse);
-        }
-        else{
-             
-            printf("%*s%s\n",depth,"",entry->d_name);
-            (*number_of_filse)++;
-            //printf("Size of the file is %ld kilo bytes \n", (findSize(entry->d_name)/1024));
-            //calculateSize(findSize(entry->d_name));
-            if(findSize(entry->d_name) > *maximum)
-            {
-                *maximum = findSize(entry->d_name);
-                //max_directory = NULL;
-                memcpy(max_directory, getcwd(s, 400), strlen(getcwd(s, 400)));
-                strcat(max_directory, "/");
-                strcat(max_directory, entry->d_name);
 
-            }
-            if(findSize(entry->d_name) < *minimum)
+            /* Recurse at a new indent level */
+
+            recurive_find_files(entry->d_name, arguments);
+
+        }
+        else{ //we found file not folder
+
+            // Update statistics using a lock to ensure synchronization
+            pthread_mutex_lock(&lock1); // if we dont have somthing like this then the programm giving somthingg incorrect...
+            // start critical section
+
+            arguments->number_of_files++;   // total number of files ++ we file
+
+
+            //update root size
+            arguments->root += findSize(entry->d_name);
+
+            //update maximum
+            if(findSize(entry->d_name) > arguments->maximum)
             {
-                *minimum = findSize(entry->d_name);
-                //min_directory = NULL;
-                memcpy(min_directory, getcwd(s, 400), strlen(getcwd(s, 400)));
-                strcat(min_directory, "/");
-                strcat(min_directory, entry->d_name);
+                arguments->maximum = findSize(entry->d_name);
+                memcpy(arguments->max_directory, getcwd(s, 1024), strlen(getcwd(s, 1024)));
+                strcat(arguments->max_directory, "/");
+                strcat(arguments->max_directory, entry->d_name);
             }
+
+            //update minimum
+            if(findSize(entry->d_name) < arguments->minimum)
+            {
+                arguments->minimum = findSize(entry->d_name);
+                memcpy(arguments->min_directory, getcwd(s, 1024), strlen(getcwd(s, 1024)));
+                strcat(arguments->min_directory, "/");
+                strcat(arguments->min_directory, entry->d_name);
+            }
+
+            //check what type of file we have.
             if(strstr(entry->d_name, ".txt")!=NULL)
-                (*text_filse)++;
+                arguments->text_filse++;
             else if(strstr(entry->d_name, ".png")!=NULL)
-                (*png_files)++;
+                arguments->png_files++;
             else if(strstr(entry->d_name, ".jpg")!=NULL)
-                (*jpg_filse)++;
+                arguments->jpg_filse++;
             else if(strstr(entry->d_name, ".pdf")!=NULL)
-                (*pdf_files)++;
+                arguments->pdf_files++;
             else if(strstr(entry->d_name, ".mp4")!=NULL)
-                (*mp4_filse)++;
+                arguments->mp4_filse++;
             else if(strstr(entry->d_name, ".zip")!=NULL)
-                (*zip_filse)++;
+                arguments->zip_filse++;
             else if(strstr(entry->d_name, ".pptx")!=NULL)
-                (*pptx_filse)++;
+                arguments->pptx_filse++;
+            else if(strstr(entry->d_name, ".c")!=NULL)
+                arguments->c_filse++;
+            else
+                arguments->uknown_filse++;
+            
+            pthread_mutex_unlock(&lock1); // exit critical section
 
         }
     }
@@ -171,49 +158,78 @@ int* jpg_filse,int* pdf_files,int* mp4_filse,int* zip_filse,int* pptx_filse)
     closedir(dp);
 }
 
+void *thread_func(void *arg) {
+
+    char *path = (char *)arg;
+    struct arg_function *arguments = malloc(sizeof(struct arg_function));
+    memset(arguments, 0, sizeof(struct arg_function));
+    arguments->maximum = 0;
+    arguments->minimum = 429496729;
+    arguments->root = 0;
+    recurive_find_files(path, arguments);
+    pthread_exit(arguments);
+}
+
 int main()
 {
-    char s[100]; 
+    char s[1024]; 
     char check_directory[1024];
-    char min_directory[1024];
-    char max_directory[1024];
-    long int maximum = 0;
-    long int minimum = 429496729;
-    int number_of_filse = 0;
-    int text_filse = 0;
-    int png_files = 0;
-    int jpg_filse = 0;
-    int pdf_files = 0;
-    int mp4_filse = 0;
-    int zip_filse = 0;
-    int pptx_filse =0;
-    // directory -> home
+    // start trying get input -> go back to home
     while(s[1] == 'h')
     {
         chdir(".."); // -> back to home
-        getcwd(s, 100); // ->  new s
+        getcwd(s, 1024); // ->  new s
     }
+    // get input
+    scanf("%s", check_directory);// -> get directory
+    pthread_mutex_init(&lock1, NULL);
+
+    pthread_t thread;
+
+    if (pthread_create(&thread, NULL, thread_func, check_directory) != 0) { //create
+        perror("Error creating thread");
+        exit(EXIT_FAILURE);
+    }
+    struct arg_function *arguments;
+    if (pthread_join(thread, (void **)&arguments) != 0) { //join
+        perror("Error joining thread");
+        exit(EXIT_FAILURE);
+    }
+
+    //show result program
+    printf("root size is : \n");
+    calculateSize(arguments->root);
+
+    printf("\n");
+
+    printf("file with the smallest size :\n");
+    puts(arguments->min_directory);
+    calculateSize(arguments->minimum);
     
-    //printf("%s\n", getcwd(s, 100));// -> getcwd -> get current directory
-    scanf("%s", check_directory);
-    printdir(check_directory,0, &maximum, &minimum, min_directory, max_directory, &number_of_filse, &text_filse, &png_files, &jpg_filse, &pdf_files, &mp4_filse, &zip_filse, &pptx_filse);
-    //printf("%ld\n%ld", minimum,maximum);
+    printf("\n");
 
-    calculateSize(minimum);
-    puts(min_directory);
-    calculateSize(maximum);
-    puts(max_directory);
-    printf("the total number of filse :  %d\n", number_of_filse);
-    printf("text_filse :  %d\n", text_filse);
-    printf("png_files :  %d\n", png_files);
-    printf("jpg_filse :  %d\n", jpg_filse);
-    printf("pdf_files :  %d\n", pdf_files);
-    printf("mp4_filse :  %d\n", mp4_filse);
-    printf("zip_filse :  %d\n", zip_filse);
-    printf("pptx_filse :  %d\n", pptx_filse);
-   // printf("%s\n", getcwd(s, 100)); /home/amin/Desktop/Main"
+    printf("file with the largest size :\n");
+    puts(arguments->max_directory);
+    calculateSize(arguments->maximum);
 
-///home/amin/Desktop/Main
+    printf("\n");
+
+    printf("the total number of filse :  %d\n", arguments->number_of_files);
+    printf("text_filse :  %d\n", arguments->text_filse);
+    printf("png_files :  %d\n", arguments->png_files);
+    printf("jpg_filse :  %d\n", arguments->jpg_filse);
+    printf("pdf_files :  %d\n", arguments->pdf_files);
+    printf("mp4_filse :  %d\n", arguments->mp4_filse);
+    printf("zip_filse :  %d\n", arguments->zip_filse);
+    printf("pptx_filse :  %d\n", arguments->pptx_filse);
+    printf("c_files :  %d\n", arguments->c_filse);
+    printf("uknown_filse :  %d\n", arguments->uknown_filse);
+
+    free(arguments);
+
+    pthread_mutex_destroy(&lock1);
+
+//      /home/amin/Desktop/Main
     
     
     return 0; 
