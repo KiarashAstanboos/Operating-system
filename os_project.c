@@ -172,8 +172,25 @@ void *thread_func(void *arg) {
 
 int main()
 {
+    //// graphical choose
+     char command[100] = "zenity --file-selection --directory";
+    char check_directory[1024]; 
+    FILE* file = popen(command, "r");
+    if (file == NULL) {
+        printf("Failed to open file explorer.\n");
+        return 1;
+    }
+
+    char selected_directory[1024];
+    fgets(selected_directory, sizeof(selected_directory), file);
+
+    pclose(file);
+
+    printf("Selected directory: %s\n", selected_directory);
+    //////
+
     char s[1024]; 
-    char check_directory[1024];
+    
     // start trying get input -> go back to home
     while(s[1] == 'h')
     {
@@ -181,7 +198,9 @@ int main()
         getcwd(s, 1024); // ->  new s
     }
     // get input
-    scanf("%s", check_directory);// -> get directory
+
+    strtok(selected_directory, "\n");
+    strcpy(check_directory , selected_directory);
     pthread_mutex_init(&lock1, NULL);
 
     pthread_t thread;
@@ -229,8 +248,8 @@ int main()
 
     pthread_mutex_destroy(&lock1);
 
-//      /home/amin/Desktop/Main
+//      /home/kiarash/Desktop/Main
     
-    
+   
     return 0; 
 }
