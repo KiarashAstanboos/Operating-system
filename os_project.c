@@ -8,8 +8,13 @@
 #include <string.h>
 #include <pthread.h>
 #include <inttypes.h>
+#include <gtk/gtk.h>
 
-
+typedef struct {
+    int value1;
+    int value2;
+    char *message;
+} UserData;
 // this arguments is information about file directory.
 struct arg_function
 {
@@ -48,6 +53,20 @@ void calculateSize(size_t size)
     }
 
     printf("%.2f %s\n", (float)size + (float)rem / 1024.0, SIZES[div]);
+}
+float calculateSize_noPrint(size_t size)
+{   
+  static const char *SIZES[] = { "B", "kB", "MB", "GB" };
+    size_t div = 0;
+    size_t rem = 0;
+
+    while (size >= 1024 && div < (sizeof SIZES / sizeof *SIZES)) {
+        rem = (size % 1024);
+        div++;   
+        size /= 1024;
+    }
+
+    return((float)size + (float)rem / 1024.0);
 }
 
 // this function return size of file.
@@ -168,9 +187,10 @@ void *thread_func(void *arg) {
     arguments->root = 0;
     recurive_find_files(path, arguments);
     pthread_exit(arguments);
+    
 }
 
-int main()
+int main(int argc, char **argv)
 {
     //// graphical choose
      char command[100] = "zenity --file-selection --directory";
@@ -233,23 +253,67 @@ int main()
 
     printf("\n");
 
-    printf("the total number of filse :  %d\n", arguments->number_of_files);
-    printf("text_filse :  %d\n", arguments->text_filse);
+    printf("the total number of files:  %d\n", arguments->number_of_files);
+    printf("text_files :  %d\n", arguments->text_filse);
     printf("png_files :  %d\n", arguments->png_files);
-    printf("jpg_filse :  %d\n", arguments->jpg_filse);
+    printf("jpg_files :  %d\n", arguments->jpg_filse);
     printf("pdf_files :  %d\n", arguments->pdf_files);
-    printf("mp4_filse :  %d\n", arguments->mp4_filse);
-    printf("zip_filse :  %d\n", arguments->zip_filse);
-    printf("pptx_filse :  %d\n", arguments->pptx_filse);
+    printf("mp4_files :  %d\n", arguments->mp4_filse);
+    printf("zip_files :  %d\n", arguments->zip_filse);
+    printf("pptx_files :  %d\n", arguments->pptx_filse);
     printf("c_files :  %d\n", arguments->c_filse);
-    printf("uknown_filse :  %d\n", arguments->uknown_filse);
-
+    printf("uknown_ffiles :  %d\n", arguments->uknown_filse);
+    int cc_files = arguments->c_filse;
     free(arguments);
 
     pthread_mutex_destroy(&lock1);
 
 //      /home/kiarash/Desktop/Main
+// show result graphically
+
+  GtkWidget *window;
+    GtkWidget *label;
+    int root=calculateSize_noPrint(arguments->root);
+
+    char* min=arguments->min_directory;
+    int minn=calculateSize_noPrint(arguments->minimum);
     
-   
-    return 0; 
+    char* max=arguments->max_directory;
+    int maxx=calculateSize_noPrint(arguments->maximum);
+
+    int total=arguments->number_of_files;
+     int text_filse = arguments->text_filse;
+     int png_files = arguments->png_files;
+     int jpg_filse = arguments->jpg_filse;
+     int pdf_files = arguments->pdf_files;
+     int mp4_filse = arguments->mp4_filse;
+     int zip_filse = arguments->zip_filse;
+     int pptx_filse = arguments->pptx_filse;
+     //int cc_files = arguments->c_filse;
+     int uknown_filse = arguments->uknown_filse;
+
+    // "<b>output:</b>\n\n root Size: %d\n minimum directory: %s\n minimum size:
+    //  %d\n maximum directory: %s\n maximum size: %d\n total files: %d\n text files: %d
+    //  \n png files: %d\n jpg files: %d\n pdf files: %d\n mp4 files: %d\n zip files: %d
+    //  \n pptx files: %d\n c_files files: %d\n unknown files: %d", root, min, minn,max,maxx,total,text_filse,png_files,jpg_filse,pdf_files,
+    //  mp4_filse,zip_filse,pptx_filse,c_filse,uknown_filse
+
+    gtk_init(&argc, &argv);
+
+    window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(window), "OS project");
+    gtk_window_set_default_size(GTK_WINDOW(window), 300, 200);
+    gtk_container_set_border_width(GTK_CONTAINER(window), 10);
+
+    label = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(label), g_strdup_printf( "<b>Result:</b>\n\n root Size: %d MB\n minimum directory: %s\n minimum size:%d MB \n maximum directory: %s\n maximum size: %d MB\n total files: %d\n text files: %d\n png files: %d\n jpg files: %d\n pdf files: %d\n mp4 files: %d\n zip files: %d\n pptx files: %d\n c_files : %d\n unknown files: %d", root, min, minn,max,maxx,total,text_filse,png_files,jpg_filse,pdf_files,mp4_filse,zip_filse,pptx_filse,cc_files,uknown_filse));
+    gtk_container_add(GTK_CONTAINER(window), label);
+
+    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+
+    gtk_widget_show_all(window);
+
+    gtk_main();
+/// end of graphical output
+    return 0;
 }
