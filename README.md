@@ -1,5 +1,5 @@
 # Operating-system
-implanted for OS Project
+implemented for OS Project
 
 just run the code and you can choose the directory.
 
