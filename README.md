@@ -1,16 +1,24 @@
-# Operating-system
-implemented for OS Project
+OS Project File Analyzer
+This repository contains a program for analyzing files within a directory and its subdirectories. The program provides functionalities to calculate various statistics such as the total number of each type of file, maximum size, minimum size, and total size of the chosen directory and its subdirectories. It also includes graphical output implemented with GTK for a user-friendly experience.
 
-just run the code and you can choose the directory.
+Features
+Directory Selection: Simply run the code and choose the directory you want to analyze.
+File Statistics: Obtain detailed statistics including the total number of each type of file, maximum size, minimum size, and total size of the directory and its subdirectories.
+Size Calculation: The program includes a function to convert file sizes into human-readable formats (e.g., 1.23 MB).
+Recursive File Analysis: Utilizes recursive file traversal to analyze files in the chosen directory and its subdirectories.
+Thread-Safe Updates: Ensures synchronization using mutex for updating statistics in a thread-safe manner.
+Functions
+calculateSize: Converts file sizes into human-readable formats.
+find_size: Determines the size of a file in bytes.
+recursive_find_files: Recursively traverses directories, analyzing files and updating statistics.
+thread_func: Entry point for a thread, initializes file statistics structure, analyzes files, and exits the thread.
+Graphical Output
+The program provides graphical output implemented with GTK for a visually appealing and user-friendly experience.
 
-The program will return the total number of each type of file,max size,min size of the chosen directory and it's subdirectories.
-
-the calculateSize function -> takes a size value, divides it by 1024 until it reaches a size less than 1024, and then prints the converted size along with the appropriate unit label (e.g., 1.23 MB).
-
-the find_size function -> opens a file, checks if it exists, determines its size, and returns the size in bytes. If the file doesn't exist or there is an error opening it, the function returns -1.
-
-the recursive_find_files function -> recursively traverses a directory and its subdirectories, analyzing files and updating various statistics such as the total number of files, root size, maximum and minimum file sizes, and file type counters. It uses file system functions and structures to retrieve file information and performs thread-safe updates using a mutex to ensure synchronization.
-
-the thread_func function -> is the entry point for a thread. It receives a directory path as an argument, initializes a structure for holding file statistics, calls the recurive_find_files function to analyze files and update the statistics, and then exits the thread, returning the arguments structure.
-
-Graphical output implanted with GTK
+How to Use
+Clone the repository to your local machine.
+Compile and run the code.
+Choose the directory you want to analyze.
+View the detailed statistics and graphical output.
+Dependencies
+GTK: Graphical output is implemented using GTK. Ensure you have GTK installed on your system
